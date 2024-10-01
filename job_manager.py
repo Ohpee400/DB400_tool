@@ -28,14 +28,6 @@ class JobManager:
         query = f"CALL QSYS.RLSJOB('{job_name}')"
         self._execute_query(query)
 
-    def get_job_details(self, job_name):
-        """獲取指定作業的詳細信息"""
-        query = f"""
-        SELECT *
-        FROM TABLE(QSYS2.ACTIVE_JOB_INFO(JOB_NAME_FILTER => '{job_name}'))
-        """
-        return self._execute_query(query)
-
     def _execute_query(self, query):
         try:
             with self.connection.cursor() as cursor:
@@ -50,6 +42,34 @@ class JobManager:
             print(f"執行查詢時發生錯誤: {str(e)}")
             return None
 
+class JobManagerGUI:
+    def __init__(self, parent, job_manager):
+        self.parent = parent
+        self.job_manager = job_manager
+
+    def list_active_jobs(self):
+        """列出所有活動作業"""
+        result = self.job_manager.list_active_jobs()
+        if result:
+            columns, data = result
+            self.job_table.setColumnCount(len(columns))
+            self.job_table.setRowCount(len(data))
+            self.job_table.setHorizontalHeaderLabels(columns)
+            for row, job_data in enumerate(data):
+                for col, value in enumerate(job_data):
+                    self.job_table.setItem(row, col, QTableWidgetItem(str(value)))
+            self.job_table.resizeColumnsToContents()
+        else:
+            QMessageBox.warning(self, "錯誤", "獲取活動作業列表失敗")
+
+    def end_selected_job(self):
+        self.job_manager.end_job(self.selected_job_name)
+
+    def hold_selected_job(self):
+        self.job_manager.hold_job(self.selected_job_name)
+
+    def release_selected_job(self):
+        self.job_manager.release_job(self.selected_job_name)
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QMessageBox
 from PySide6.QtCore import Qt
 

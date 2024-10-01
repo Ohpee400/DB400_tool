@@ -11,6 +11,10 @@ from system_monitor import SystemMonitorGUI
 from user_manager import UserManager, UserManagerGUI
 from job_manager import JobManager, JobManagerGUI
 from utils import force_quit, setup_environment
+from gui import AS400ConnectorGUI
+from user_manager import UserManager
+from job_manager import JobManager
+from as400_connector import connect_to_as400
 
 class CustomItemDelegate(QStyledItemDelegate):
     def paint(self, painter, option, index):
@@ -370,7 +374,7 @@ class AS400ConnectorGUI(QMainWindow):
                 self.export_button.setEnabled(False)
                 self.statusBar().showMessage("已斷開所有連接")
         else:
-            QMessageBox.warning(self, "斷開連接警告", f"斷開連接時發生錯誤：{error}")
+            QMessageBox.warning(self, "斷開連接警告", f"斷開連接时發生錯誤：{error}")
 
     def switch_system(self, index):
         if index == 0:  # "選擇系統..." 項
@@ -407,7 +411,7 @@ class AS400ConnectorGUI(QMainWindow):
             self.statusBar().showMessage(f"查詢成功，返回 {len(self.result)} 行結果")
             self.export_button.setEnabled(True)
         else:
-            QMessageBox.critical(self, "查詢失敗", f"執行查詢時發生錯誤: {error}")
+            QMessageBox.critical(self, "查詢失敗", f"執行查詢时發生錯誤: {error}")
             self.statusBar().showMessage("查詢執行失敗")
 
     def export_results(self):

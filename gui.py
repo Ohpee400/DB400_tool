@@ -26,14 +26,14 @@ class AS400ConnectorGUI(QMainWindow):
     def __init__(self):
         super().__init__()
         setup_environment()
-        self.user_manager_gui = UserManagerGUI(self)
-        self.job_manager_gui = JobManagerGUI(self)
         self.connections = {}  # 存儲多個連接
         self.current_connection = None
         self.result = None
         self.connection_error = None
         self.user_managers = {}
         self.job_managers = {}
+        self.user_manager_gui = None
+        self.job_manager_gui = None
         self.initUI()
         self.setStyleSheet("""
             QMainWindow {
@@ -322,6 +322,8 @@ class AS400ConnectorGUI(QMainWindow):
             self.connection_error = None
             self.user_managers[host] = UserManager(connection)
             self.job_managers[host] = JobManager(connection)
+            self.user_manager_gui = UserManagerGUI(self, self.user_managers[host])
+            self.job_manager_gui = JobManagerGUI(self, self.job_managers[host])
             self.connection_successful.emit(connection)  # 發射信號
         else:
             self.connection_error = error
@@ -424,7 +426,7 @@ class AS400ConnectorGUI(QMainWindow):
             QMessageBox.warning(self, "無結果", "沒有可匯出的查詢結果")
             return
 
-        file_path, _ = QFileDialog.getSaveFileName(self, "保存Excel文件", "", "Excel Files (*.xlsx)")
+        file_path, _ = QFileDialog.getSaveFileName(self, "保存Excel文", "", "Excel Files (*.xlsx)")
         if not file_path:
             return
 
@@ -471,6 +473,7 @@ class AS400ConnectorGUI(QMainWindow):
         event.accept()
 
     def setup_user_manager_page(self):
+        self.user_manager_page = QWidget()
         layout = QVBoxLayout(self.user_manager_page)
 
         # 創建標題和切換按鈕的水平佈局
@@ -508,8 +511,6 @@ class AS400ConnectorGUI(QMainWindow):
         
         layout.addLayout(button_layout)
         
-        self.refresh_user_list()
-
         refresh_button = QPushButton("刷新用戶列表")
         refresh_button.clicked.connect(self.refresh_user_list)
         layout.addWidget(refresh_button)

@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, Q
 from PySide6.QtGui import QFont, QColor, QShortcut, QKeySequence
 from PySide6.QtCore import Qt, QCoreApplication, Signal  
 from openpyxl import Workbook
-from as400_connector import connect_to_as400, disconnect_from_as400, execute_query
+from as400_connector import AS400Connector
 from system_monitor import SystemMonitorGUI
 from user_manager import UserManager, UserManagerGUI
 from job_manager import JobManager, JobManagerGUI
@@ -26,8 +26,7 @@ class AS400ConnectorGUI(QMainWindow):
     def __init__(self):
         super().__init__()
         setup_environment()
-        self.connections = {}  # 存儲多個連接
-        self.current_connection = None
+        self.as400_connector = AS400Connector()
         self.result = None
         self.connection_error = None
         self.user_managers = {}
@@ -299,11 +298,8 @@ class AS400ConnectorGUI(QMainWindow):
             QMessageBox.warning(self, "輸入錯誤", "請填寫所有必要的連接信息")
             return
 
-        connection, error = connect_to_as400(host, user, password)
+        connection, error = self.as400_connector.connect_to_as400(host, user, password)
         if connection:
-            self.connections[host] = connection
-            self.current_connection = host
-            
             QMessageBox.information(self, "連接成功", f"已成功連接到IBM i系統: {host}")
             self.statusBar().showMessage(f"成功連接到 {host}")
             self.connect_button.setEnabled(False)
@@ -331,7 +327,7 @@ class AS400ConnectorGUI(QMainWindow):
             self.statusBar().showMessage("連接失敗")
 
     def show_disconnect_dialog(self):
-        if not self.connections:
+        if not self.as400_connector.connections:
             QMessageBox.warning(self, "無連接", "當前沒有活動的連接")
             return
 
@@ -340,7 +336,7 @@ class AS400ConnectorGUI(QMainWindow):
         layout = QVBoxLayout(dialog)
 
         combo = QComboBox()
-        for host in self.connections.keys():
+        for host in self.as400_connector.connections.keys():
             combo.addItem(host)
         layout.addWidget(combo)
 
@@ -357,43 +353,36 @@ class AS400ConnectorGUI(QMainWindow):
             self.disconnect_from_as400(selected_host)
 
     def disconnect_from_as400(self, host):
-        if host in self.connections:
-            success, error = disconnect_from_as400(self.connections[host])
-            if success:
-                del self.connections[host]
-                index = self.system_combo.findText(host)
-                if index != -1:
-                    self.system_combo.removeItem(index)
-                QMessageBox.information(self, "斷開連接", f"已成功斷開與IBM i系統 {host} 的連接")
-                
-                if self.connections:
-                    self.current_connection = next(iter(self.connections))
-                    self.system_combo.setCurrentText(self.current_connection)
-                    self.statusBar().showMessage(f"已切換到 {self.current_connection}")
-                else:
-                    self.current_connection = None
-                    self.connect_button.setEnabled(True)
-                    self.disconnect_button.setEnabled(False)
-                    self.execute_button.setEnabled(False)
-                    self.export_button.setEnabled(False)
-                    self.statusBar().showMessage("已斷開所有連接")
+        success, error = self.as400_connector.disconnect_from_as400(host)
+        if success:
+            index = self.system_combo.findText(host)
+            if index != -1:
+                self.system_combo.removeItem(index)
+            QMessageBox.information(self, "斷開連接", f"已成功斷開與IBM i系統 {host} 的連接")
+            
+            if self.as400_connector.connections:
+                self.system_combo.setCurrentText(self.as400_connector.current_connection)
+                self.statusBar().showMessage(f"已切換到 {self.as400_connector.current_connection}")
             else:
-                QMessageBox.warning(self, "斷開連接警告", f"斷開連接时发生错误：{error}")
+                self.connect_button.setEnabled(True)
+                self.disconnect_button.setEnabled(False)
+                self.execute_button.setEnabled(False)
+                self.export_button.setEnabled(False)
+                self.statusBar().showMessage("已斷開所有連接")
         else:
-            QMessageBox.warning(self, "無效的連接", f"找不到與 {host} 的連接")
+            QMessageBox.warning(self, "斷開連接警告", f"斷開連接時發生錯誤：{error}")
 
     def switch_system(self, index):
         if index == 0:  # "選擇系統..." 項
             return
         
         selected_system = self.system_combo.currentText()
-        if selected_system != self.current_connection:
-            self.current_connection = selected_system
+        if self.as400_connector.switch_system(selected_system):
             self.statusBar().showMessage(f"已切換到系統: {selected_system}")
 
     def execute_query(self):
-        if not self.current_connection:
-            QMessageBox.warning(self, "無連接", "請先連接到個系統")
+        if not self.as400_connector.current_connection:
+            QMessageBox.warning(self, "無連接", "請先連接到系統")
             return
 
         query = self.query_input.toPlainText()
@@ -401,7 +390,7 @@ class AS400ConnectorGUI(QMainWindow):
             QMessageBox.warning(self, "查詢為空", "請輸入SQL查詢")
             return
 
-        result, error = execute_query(self.connections[self.current_connection], query)
+        result, error = self.as400_connector.execute_query(query)
         if result:
             columns, data = result
             self.result = data
@@ -418,7 +407,7 @@ class AS400ConnectorGUI(QMainWindow):
             self.statusBar().showMessage(f"查詢成功，返回 {len(self.result)} 行結果")
             self.export_button.setEnabled(True)
         else:
-            QMessageBox.critical(self, "查詢失敗", f"執行查詢时發生錯誤: {error}")
+            QMessageBox.critical(self, "查詢失敗", f"執行查詢時發生錯誤: {error}")
             self.statusBar().showMessage("查詢執行失敗")
 
     def export_results(self):
@@ -454,21 +443,21 @@ class AS400ConnectorGUI(QMainWindow):
             self.switch_button.setText('切換到系統監控')
 
     def switch_to_user_manager(self):
-        if not self.user_managers or self.current_connection not in self.user_managers:
+        if not self.user_managers or self.as400_connector.current_connection not in self.user_managers:
             QMessageBox.warning(self, "錯誤", "未連接到系統或 UserManager 未初始化")
             return
         self.stacked_widget.setCurrentWidget(self.user_manager_page)
         self.switch_button.setText('返回主界面')
 
     def switch_to_job_manager(self):
-        if not self.job_managers or self.current_connection not in self.job_managers:
+        if not self.job_managers or self.as400_connector.current_connection not in self.job_managers:
             QMessageBox.warning(self, "錯誤", "未連接到系統或 JobManager 未初始化")
             return
         self.stacked_widget.setCurrentWidget(self.job_manager_page)
         self.switch_button.setText('返回主界面')
 
     def closeEvent(self, event):
-        for conn in self.connections.values():
+        for conn in self.as400_connector.connections.values():
             conn.close()
         event.accept()
 
@@ -516,12 +505,12 @@ class AS400ConnectorGUI(QMainWindow):
         layout.addWidget(refresh_button)
 
     def refresh_user_list(self):
-        if not self.current_connection or self.current_connection not in self.user_managers:
+        if not self.as400_connector.current_connection or self.as400_connector.current_connection not in self.user_managers:
             self.user_table.setRowCount(0)
             self.user_table.setColumnCount(0)
             return
         
-        users = self.user_managers[self.current_connection].list_users()
+        users = self.user_managers[self.as400_connector.current_connection].list_users()
         if users:
             columns, data = users
             self.user_table.setColumnCount(len(columns))
@@ -590,11 +579,11 @@ class AS400ConnectorGUI(QMainWindow):
         layout.addWidget(refresh_button)
 
     def refresh_job_list(self):
-        if not self.job_managers or self.current_connection not in self.job_managers:
+        if not self.job_managers or self.as400_connector.current_connection not in self.job_managers:
             QMessageBox.warning(self, "錯誤", "未連接到系統或 JobManager 未初始化")
             return
         
-        jobs = self.job_managers[self.current_connection].list_active_jobs()
+        jobs = self.job_managers[self.as400_connector.current_connection].list_active_jobs()
         if jobs:
             columns, data = jobs
             self.job_table.setColumnCount(len(columns))

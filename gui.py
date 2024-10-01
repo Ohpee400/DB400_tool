@@ -8,23 +8,9 @@ from PySide6.QtCore import Qt, QCoreApplication, Signal
 from openpyxl import Workbook
 from as400_connector import connect_to_as400, disconnect_from_as400, execute_query
 from system_monitor import SystemMonitorGUI
-from user_manager import UserManager
-from job_manager import JobManager
-
-# 確保程序完全退出
-def force_quit():
-    QCoreApplication.quit()
-    sys.exit(0)
-
-jt400_path = "/Users/clark/Desktop/DDSC/Clark文件/13-JavaCode/jt400.jar"
-if not os.path.exists(jt400_path):
-    print(f"錯誤：jt400.jar 文件未找到：{jt400_path}")
-    sys.exit(1)
-
-java_home = "/Library/Java/JavaVirtualMachines/jdk-22.jdk/Contents/Home"
-os.environ["JAVA_HOME"] = java_home
-os.environ["PATH"] = f"{java_home}/bin:{os.environ.get('PATH', '')}"
-os.environ["CLASSPATH"] = f"{jt400_path}:{os.environ.get('CLASSPATH', '')}"
+from user_manager import UserManager, UserManagerGUI
+from job_manager import JobManager, JobManagerGUI
+from utils import force_quit, setup_environment
 
 class CustomItemDelegate(QStyledItemDelegate):
     def paint(self, painter, option, index):
@@ -39,6 +25,9 @@ class AS400ConnectorGUI(QMainWindow):
     
     def __init__(self):
         super().__init__()
+        setup_environment()
+        self.user_manager_gui = UserManagerGUI(self)
+        self.job_manager_gui = JobManagerGUI(self)
         self.connections = {}  # 存儲多個連接
         self.current_connection = None
         self.result = None
@@ -548,104 +537,13 @@ class AS400ConnectorGUI(QMainWindow):
             self.user_table.setColumnCount(0)
 
     def create_user_dialog(self):
-        dialog = QDialog(self)
-        dialog.setWindowTitle("新建用戶")
-        layout = QVBoxLayout(dialog)
-
-        username_input = QLineEdit()
-        username_input.setPlaceholderText("用戶名")
-        layout.addWidget(username_input)
-
-        password_input = QLineEdit()
-        password_input.setPlaceholderText("密碼")
-        password_input.setEchoMode(QLineEdit.EchoMode.Password)
-        layout.addWidget(password_input)
-
-        description_input = QLineEdit()
-        description_input.setPlaceholderText("描述（可選）")
-        layout.addWidget(description_input)
-
-        authority_input = QComboBox()
-        authority_input.addItems(["*USER", "*SECADM", "*ALLOBJ"])
-        layout.addWidget(QLabel("權限:"))
-        layout.addWidget(authority_input)
-
-        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        button_box.accepted.connect(dialog.accept)
-        button_box.rejected.connect(dialog.reject)
-        layout.addWidget(button_box)
-
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            username = username_input.text()
-            password = password_input.text()
-            description = description_input.text()
-            authority = authority_input.currentText()
-            if username and password:
-                try:
-                    self.user_managers[self.current_connection].create_user(username, password, description, authority)
-                    QMessageBox.information(self, "成功", f"用戶 {username} 創建成功")
-                    self.refresh_user_list()
-                except Exception as e:
-                    QMessageBox.critical(self, "錯誤", f"創建用戶失敗: {str(e)}")
-            else:
-                QMessageBox.warning(self, "輸入錯誤", "用戶名和密碼不能為空")
+        self.user_manager_gui.create_user_dialog()
 
     def delete_user_dialog(self):
-        dialog = QDialog(self)
-        dialog.setWindowTitle("刪除用戶")
-        layout = QVBoxLayout(dialog)
-
-        username_input = QLineEdit()
-        username_input.setPlaceholderText("要刪除的用戶名")
-        layout.addWidget(username_input)
-
-        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        button_box.accepted.connect(dialog.accept)
-        button_box.rejected.connect(dialog.reject)
-        layout.addWidget(button_box)
-
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            username = username_input.text()
-            if username:
-                try:
-                    self.user_managers[self.current_connection].delete_user(username)
-                    QMessageBox.information(self, "成功", f"用戶 {username} 刪除成功")
-                    self.refresh_user_list()
-                except Exception as e:
-                    QMessageBox.critical(self, "錯誤", f"刪除用戶失敗: {str(e)}")
-            else:
-                QMessageBox.warning(self, "輸入錯誤", "用戶名不能為空")
+        self.user_manager_gui.delete_user_dialog()
 
     def change_password_dialog(self):
-        dialog = QDialog(self)
-        dialog.setWindowTitle("修改密碼")
-        layout = QVBoxLayout(dialog)
-
-        username_input = QLineEdit()
-        username_input.setPlaceholderText("用戶名")
-        layout.addWidget(username_input)
-
-        new_password_input = QLineEdit()
-        new_password_input.setPlaceholderText("新密碼")
-        new_password_input.setEchoMode(QLineEdit.EchoMode.Password)
-        layout.addWidget(new_password_input)
-
-        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        button_box.accepted.connect(dialog.accept)
-        button_box.rejected.connect(dialog.reject)
-        layout.addWidget(button_box)
-
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            username = username_input.text()
-            new_password = new_password_input.text()
-            if username and new_password:
-                try:
-                    self.user_managers[self.current_connection].change_password(username, new_password)
-                    QMessageBox.information(self, "成功", f"用戶 {username} 的密碼已成功修改")
-                except Exception as e:
-                    QMessageBox.critical(self, "錯誤", f"修改密碼失敗: {str(e)}")
-            else:
-                QMessageBox.warning(self, "輸入錯誤", "用戶名和新密碼不能為空")
+        self.user_manager_gui.change_password_dialog()
 
     def setup_job_manager_page(self):
         layout = QVBoxLayout(self.job_manager_page)
@@ -711,40 +609,10 @@ class AS400ConnectorGUI(QMainWindow):
             QMessageBox.warning(self, "錯誤", "獲取活動作業列表失敗")
 
     def end_selected_job(self):
-        selected_items = self.job_table.selectedItems()
-        if not selected_items:
-            QMessageBox.warning(self, "錯誤", "請先選擇一個作業")
-            return
-        job_name = selected_items[0].text()
-        try:
-            self.job_managers[self.current_connection].end_job(job_name)
-            QMessageBox.information(self, "成功", f"作業 {job_name} 已成功結束")
-            self.refresh_job_list()
-        except Exception as e:
-            QMessageBox.critical(self, "錯誤", f"結束作業失敗: {str(e)}")
+        self.job_manager_gui.end_selected_job()
 
     def hold_selected_job(self):
-        selected_items = self.job_table.selectedItems()
-        if not selected_items:
-            QMessageBox.warning(self, "錯誤", "請先選擇一個作業")
-            return
-        job_name = selected_items[0].text()
-        try:
-            self.job_managers[self.current_connection].hold_job(job_name)
-            QMessageBox.information(self, "成功", f"作業 {job_name} 已成功暫停")
-            self.refresh_job_list()
-        except Exception as e:
-            QMessageBox.critical(self, "錯誤", f"暫停作業失敗: {str(e)}")
+        self.job_manager_gui.hold_selected_job()
 
     def release_selected_job(self):
-        selected_items = self.job_table.selectedItems()
-        if not selected_items:
-            QMessageBox.warning(self, "錯誤", "請先選擇一個作業")
-            return
-        job_name = selected_items[0].text()
-        try:
-            self.job_managers[self.current_connection].release_job(job_name)
-            QMessageBox.information(self, "成功", f"作業 {job_name} 已成功釋放")
-            self.refresh_job_list()
-        except Exception as e:
-            QMessageBox.critical(self, "錯誤", f"釋放作業失敗: {str(e)}")
+        self.job_manager_gui.release_selected_job()

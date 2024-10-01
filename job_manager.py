@@ -49,3 +49,16 @@ class JobManager:
         except Exception as e:
             print(f"執行查詢時發生錯誤: {str(e)}")
             return None
+
+class JobManagerGUI:
+    def __init__(self, parent):
+        self.parent = parent
+
+    def end_selected_job(self):
+        # 實現結束選定作業的邏輯
+
+    def hold_selected_job(self):
+        # 實現暫停選定作業的邏輯
+
+    def release_selected_job(self):
+        # 實現釋放選定作業的邏輯

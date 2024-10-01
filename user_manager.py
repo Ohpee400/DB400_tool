@@ -58,3 +58,16 @@ class UserManager:
         except Exception as e:
             print(f"執行查詢時發生錯誤: {str(e)}")
             return None
+
+class UserManagerGUI:
+    def __init__(self, parent):
+        self.parent = parent
+
+    def create_user_dialog(self):
+        # 實現創建用戶對話框的邏輯
+
+    def delete_user_dialog(self):
+        # 實現刪除用戶對話框的邏輯
+
+    def change_password_dialog(self):
+        # 實現更改密碼對話框的邏輯

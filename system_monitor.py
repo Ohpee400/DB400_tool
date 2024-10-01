@@ -116,11 +116,11 @@ class SystemMonitorGUI(QWidget):
         self.execute_query(query, self.job_log_result)
 
     def execute_query(self, query, result_widget):
-        if not self.parent_gui.current_connection:
+        if not self.parent_gui.as400_connector.current_connection:
             QMessageBox.warning(self, "無連接", "請先選擇一個連接的系統")
             return
 
-        result, error = execute_query(self.parent_gui.connections[self.parent_gui.current_connection], query)
+        result, error = self.parent_gui.as400_connector.execute_query(query)
         if result:
             columns, data = result
             

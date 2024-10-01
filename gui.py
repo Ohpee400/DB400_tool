@@ -11,10 +11,6 @@ from system_monitor import SystemMonitorGUI
 from user_manager import UserManager, UserManagerGUI
 from job_manager import JobManager, JobManagerGUI
 from utils import force_quit, setup_environment
-from gui import AS400ConnectorGUI
-from user_manager import UserManager
-from job_manager import JobManager
-from as400_connector import connect_to_as400
 
 class CustomItemDelegate(QStyledItemDelegate):
     def paint(self, painter, option, index):
@@ -37,6 +33,7 @@ class AS400ConnectorGUI(QMainWindow):
         self.job_managers = {}
         self.user_manager_gui = None
         self.job_manager_gui = None
+        self.current_connection = None
         self.initUI()
         self.setStyleSheet("""
             QMainWindow {
@@ -209,7 +206,7 @@ class AS400ConnectorGUI(QMainWindow):
 
         add_separator()
 
-        # 輸入欄位（在同���行）
+        # 輸入欄位（在同行）
         input_layout = QHBoxLayout()
         self.host_input = QLineEdit()
         self.user_input = QLineEdit()
@@ -320,6 +317,7 @@ class AS400ConnectorGUI(QMainWindow):
             self.password_input.clear()
             
             self.connection_error = None
+            self.current_connection = host
             self.user_managers[host] = UserManager(connection)
             self.job_managers[host] = JobManager(connection)
             self.user_manager_gui = UserManagerGUI(self, self.user_managers[host])
@@ -610,3 +608,7 @@ class AS400ConnectorGUI(QMainWindow):
 
     def release_selected_job(self):
         self.job_manager_gui.release_selected_job()
+
+    def set_managers(self, user_manager, job_manager):
+        self.user_managers[self.current_connection] = user_manager
+        self.job_managers[self.current_connection] = job_manager

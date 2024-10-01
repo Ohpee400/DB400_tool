@@ -209,7 +209,7 @@ class AS400ConnectorGUI(QMainWindow):
 
         add_separator()
 
-        # 輸入欄位（在同一行）
+        # 輸入欄位（在同���行）
         input_layout = QHBoxLayout()
         self.host_input = QLineEdit()
         self.user_input = QLineEdit()

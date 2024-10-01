@@ -7,7 +7,7 @@ from as400_connector import connect_to_as400
 
 def create_application():
     app = QApplication(sys.argv)
-    app.setStyle('Fusion')  # 使用 Fusion 风格以獲得更現代的外觀
+    app.setStyle('Fusion')  # 使用 Fusion 风格以获得更现代的外观
     return app
 
 def setup_main_gui():

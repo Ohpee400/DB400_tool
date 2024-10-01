@@ -447,14 +447,14 @@ class AS400ConnectorGUI(QMainWindow):
             QMessageBox.warning(self, "錯誤", "未連接到系統或 UserManager 未初始化")
             return
         self.stacked_widget.setCurrentWidget(self.user_manager_page)
-        self.switch_button.setText('返回主界面')
+        self.switch_button.setText('切換到系統監控')
 
     def switch_to_job_manager(self):
         if not self.job_managers or self.as400_connector.current_connection not in self.job_managers:
             QMessageBox.warning(self, "錯誤", "未連接到系統或 JobManager 未初始化")
             return
         self.stacked_widget.setCurrentWidget(self.job_manager_page)
-        self.switch_button.setText('返回主界面')
+        self.switch_button.setText('切換到系統監控')
 
     def closeEvent(self, event):
         for conn in self.as400_connector.connections.values():

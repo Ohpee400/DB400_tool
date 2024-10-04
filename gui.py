@@ -31,8 +31,6 @@ class AS400ConnectorGUI(QMainWindow):
         self.connection_error = None
         self.user_managers = {}
         self.job_managers = {}
-        self.user_manager_gui = None
-        self.job_manager_gui = None
         self.current_connection = None
         self.initUI()
         self.setStyleSheet("""
@@ -318,10 +316,8 @@ class AS400ConnectorGUI(QMainWindow):
             
             self.connection_error = None
             self.current_connection = host
-            self.user_managers[host] = UserManager(connection)
+            self.user_managers[host] = UserManagerGUI(self, UserManager(connection))
             self.job_managers[host] = JobManager(connection)
-            self.user_manager_gui = UserManagerGUI(self, self.user_managers[host])
-            self.job_manager_gui = JobManagerGUI(self, self.job_managers[host])
             self.connection_successful.emit(connection)  # 發射信號
         else:
             self.connection_error = error
@@ -518,8 +514,8 @@ class AS400ConnectorGUI(QMainWindow):
             QMessageBox.warning(self, "錯誤", "未連接到系統或 UserManager 未初始化")
             return
         
-        user_manager = self.user_managers[self.as400_connector.current_connection]
-        users = user_manager.list_users()  # 直接使用 UserManager 的 list_users 方法
+        user_manager_gui = self.user_managers[self.as400_connector.current_connection]
+        users = user_manager_gui.user_manager.list_users()  # 使用 UserManager 的 list_users 方法
         if users:
             columns, data = users
             self.user_table.setColumnCount(len(columns))
@@ -535,13 +531,22 @@ class AS400ConnectorGUI(QMainWindow):
         else:
             QMessageBox.warning(self, "錯誤", "無法獲取用戶列表")
     def create_user_dialog(self):
-        self.user_manager_gui.create_user_dialog()
+        if self.as400_connector.current_connection in self.user_managers:
+            self.user_managers[self.as400_connector.current_connection].create_user_dialog()
+        else:
+            QMessageBox.warning(self, "錯誤", "未連接到系統或 UserManager 未初始化")
 
     def delete_user_dialog(self):
-        self.user_manager_gui.delete_user_dialog()
+        if self.as400_connector.current_connection in self.user_managers:
+            self.user_managers[self.as400_connector.current_connection].delete_user_dialog()
+        else:
+            QMessageBox.warning(self, "錯誤", "未連接到系統或 UserManager 未初始化")
 
     def change_password_dialog(self):
-        self.user_manager_gui.change_password_dialog()
+        if self.as400_connector.current_connection in self.user_managers:
+            self.user_managers[self.as400_connector.current_connection].change_password_dialog()
+        else:
+            QMessageBox.warning(self, "錯誤", "未連接到系統或 UserManager 未初始化")
 
     def setup_job_manager_page(self):
         layout = QVBoxLayout(self.job_manager_page)
@@ -608,26 +613,35 @@ class AS400ConnectorGUI(QMainWindow):
             QMessageBox.warning(self, "錯誤", "獲取活動作業列表失敗")
 
     def end_selected_job(self):
-        self.job_manager_gui.end_selected_job()
+        if self.as400_connector.current_connection in self.job_managers:
+            self.job_managers[self.as400_connector.current_connection].end_selected_job()
+        else:
+            QMessageBox.warning(self, "錯誤", "未連接到系統或 JobManager 未初始化")
 
     def hold_selected_job(self):
-        self.job_manager_gui.hold_selected_job()
+        if self.as400_connector.current_connection in self.job_managers:
+            self.job_managers[self.as400_connector.current_connection].hold_selected_job()
+        else:
+            QMessageBox.warning(self, "錯誤", "未連接到系統或 JobManager 未初始化")
 
     def release_selected_job(self):
-        self.job_manager_gui.release_selected_job()
+        if self.as400_connector.current_connection in self.job_managers:
+            self.job_managers[self.as400_connector.current_connection].release_selected_job()
+        else:
+            QMessageBox.warning(self, "錯誤", "未連接到系統或 JobManager 未初始化")
 
     def set_managers(self, user_manager, job_manager):
         self.user_managers[self.as400_connector.current_connection] = UserManagerGUI(self, user_manager)
-        self.job_managers[self.as400_connector.current_connection] = job_manager
+        self.job_managers[self.as400_connector.current_connection] = JobManagerGUI(self, job_manager)
 
     def disable_user_dialog(self):
-        if self.user_managers and self.as400_connector.current_connection in self.user_managers:
+        if self.as400_connector.current_connection in self.user_managers:
             self.user_managers[self.as400_connector.current_connection].disable_user_dialog()
         else:
             QMessageBox.warning(self, "錯誤", "未連接到系統或 UserManager 未初始化")
 
     def enable_user_dialog(self):
-        if self.user_managers and self.as400_connector.current_connection in self.user_managers:
+        if self.as400_connector.current_connection in self.user_managers:
             self.user_managers[self.as400_connector.current_connection].enable_user_dialog()
         else:
             QMessageBox.warning(self, "錯誤", "未連接到系統或 UserManager 未初始化")

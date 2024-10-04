@@ -101,6 +101,10 @@ class JobManagerGUI(QWidget):
         self.job_table = QTableWidget()
         layout.addWidget(self.job_table)
 
+        # 设置表格选择模式为整行选择
+        self.job_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.job_table.setSelectionMode(QTableWidget.SingleSelection)
+
         # 連接按鈕信號
         self.refresh_button.clicked.connect(self.refresh_job_list)
         self.end_button.clicked.connect(self.end_selected_job)
@@ -131,7 +135,16 @@ class JobManagerGUI(QWidget):
         if not selected_items:
             QMessageBox.warning(self, "警告", "請先選擇一個作業")
             return None
-        return selected_items[0].text()  # 假設第一列是作業名稱
+        
+        # 获取选中行的第一个单元格（假设第一列是作业名称）
+        selected_row = selected_items[0].row()
+        job_name_item = self.job_table.item(selected_row, 0)
+        
+        if job_name_item:
+            return job_name_item.text()
+        else:
+            QMessageBox.warning(self, "警告", "無法獲取所選作業的名稱")
+            return None
 
     def end_selected_job(self):
         job_name = self.get_selected_job()
@@ -139,8 +152,12 @@ class JobManagerGUI(QWidget):
             confirm = QMessageBox.question(self, "確認", f"確定要結束作業 {job_name} 嗎？",
                                            QMessageBox.Yes | QMessageBox.No)
             if confirm == QMessageBox.Yes:
-                self.job_manager.end_job(job_name)
-                self.refresh_job_list()
+                try:
+                    self.job_manager.end_job(job_name)
+                    QMessageBox.information(self, "成功", f"作業 {job_name} 已成功結束")
+                    self.refresh_job_list()
+                except Exception as e:
+                    QMessageBox.critical(self, "錯誤", f"結束作業時發生錯誤: {str(e)}")
 
     def hold_selected_job(self):
         job_name = self.get_selected_job()

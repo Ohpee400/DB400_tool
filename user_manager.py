@@ -194,7 +194,7 @@ class UserManagerGUI(QWidget):
             self.user_table.resizeColumnsToContents()
             self.user_table.setSelectionBehavior(QTableWidget.SelectRows)
         else:
-            QMessageBox.warning(self, "錯誤", "無法���取用戶列表")
+            QMessageBox.warning(self, "錯誤", "無法取用戶列表")
 
     def create_user_dialog(self):
         dialog = CreateUserDialog(self)

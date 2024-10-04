@@ -2,6 +2,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushBu
 from PySide6.QtGui import QFont
 from PySide6.QtCore import Qt
 from as400_connector import execute_query
+import concurrent.futures
 
 class SystemMonitorGUI(QWidget):
     def __init__(self, parent):
@@ -135,3 +136,12 @@ class SystemMonitorGUI(QWidget):
             result_widget.resizeColumnsToContents()
         else:
             QMessageBox.critical(self, "查詢失敗", f"執行查詢時發生錯誤: {error}")
+
+    def refresh_all_monitors(self):
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            futures = [
+                executor.submit(self.query_qsysopr),
+                executor.submit(self.query_history_log),
+                executor.submit(self.query_job_log, self.job_input.text())
+            ]
+            concurrent.futures.wait(futures)

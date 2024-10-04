@@ -3,6 +3,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, Q
                                QMessageBox, QInputDialog, QLineEdit, QComboBox, QDialog, QFormLayout, QCheckBox, QDialogButtonBox)
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
+import time
 
 class PasswordLineEdit(QWidget):
     def __init__(self, parent=None):
@@ -81,15 +82,21 @@ class CreateUserDialog(QDialog):
 class UserManager:
     def __init__(self, connection):
         self.connection = connection
+        self.user_cache = {}
+        self.cache_time = 0
 
     def list_users(self):
-        """列出所有使用者"""
-        query = """
-        SELECT USER_NAME, STATUS, PREVIOUS_SIGNON, PASSWORD_CHANGE_DATE
-        FROM QSYS2.USER_INFO
-        ORDER BY USER_NAME
-        """
-        return self._execute_query(query)
+        current_time = time.time()
+        if current_time - self.cache_time > 300:  # 緩存5分鐘
+            query = """
+            SELECT USER_NAME, STATUS, PREVIOUS_SIGNON, PASSWORD_CHANGE_DATE
+            FROM QSYS2.USER_INFO
+            ORDER BY USER_NAME
+            """
+            result = self._execute_query(query)
+            self.user_cache = {user[0]: user for user in result[1]}
+            self.cache_time = current_time
+        return list(self.user_cache.values())
 
     def create_user(self, username, password, description="", user_class="*USER", special_authorities=[]):
         """創建新使用者"""
@@ -194,7 +201,7 @@ class UserManagerGUI(QWidget):
             self.user_table.resizeColumnsToContents()
             self.user_table.setSelectionBehavior(QTableWidget.SelectRows)
         else:
-            QMessageBox.warning(self, "錯誤", "無法���取用戶列表")
+            QMessageBox.warning(self, "錯誤", "無法取戶列表")
 
     def create_user_dialog(self):
         dialog = CreateUserDialog(self)

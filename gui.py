@@ -35,6 +35,8 @@ class AS400ConnectorGUI(QMainWindow):
         self.job_manager_gui = None
         self.current_connection = None
         self.initUI()
+        self.user_manager = None
+        self.job_manager = None
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #F0F4F8;
@@ -142,21 +144,14 @@ class AS400ConnectorGUI(QMainWindow):
         self.stacked_widget = QStackedWidget()
         self.main_layout.addWidget(self.stacked_widget)
 
-        # 創建主界面和系統監控界面
         self.main_page = QWidget()
-        self.system_monitor_page = SystemMonitorGUI(self)
-        self.user_manager_page = QWidget()
-        self.setup_user_manager_page()
-        self.job_manager_page = QWidget()
-        self.setup_job_manager_page()
-
-        # 將兩個界面添加到堆疊小部件中
         self.stacked_widget.addWidget(self.main_page)
-        self.stacked_widget.addWidget(self.system_monitor_page)
-        self.stacked_widget.addWidget(self.user_manager_page)
-        self.stacked_widget.addWidget(self.job_manager_page)
 
-        # 設置主界面佈局
+        # 延遲加載其他頁面
+        self.system_monitor_page = None
+        self.user_manager_page = None
+        self.job_manager_page = None
+
         self.setup_main_page()
 
         self.statusBar().showMessage("準備就緒")
@@ -438,6 +433,7 @@ class AS400ConnectorGUI(QMainWindow):
     
     def switch_interface(self):
         if self.stacked_widget.currentWidget() == self.main_page:
+            self.load_system_monitor_page()
             self.stacked_widget.setCurrentWidget(self.system_monitor_page)
             self.switch_button.setText('切換到主界面')
         else:
@@ -634,3 +630,20 @@ class AS400ConnectorGUI(QMainWindow):
             self.user_managers[self.as400_connector.current_connection].enable_user_dialog()
         else:
             QMessageBox.warning(self, "錯誤", "未連接到系統或 UserManager 未初始化")
+
+    def load_system_monitor_page(self):
+        if self.system_monitor_page is None:
+            self.system_monitor_page = SystemMonitorGUI(self)
+            self.stacked_widget.addWidget(self.system_monitor_page)
+
+    def get_connection_info(self):
+        # 從 GUI 元素中獲取連接信息
+        host = self.host_input.text()
+        user = self.user_input.text()
+        password = self.password_input.text()
+        return host, user, password
+
+    def set_managers(self, user_manager, job_manager):
+        self.user_manager = user_manager
+        self.job_manager = job_manager
+        # 在這裡可以啟用相關的 GUI 元素或更新界面

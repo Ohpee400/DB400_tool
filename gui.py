@@ -204,7 +204,7 @@ class AS400ConnectorGUI(QMainWindow):
 
         add_separator()
 
-        # 輸入欄位（在同行）
+        # 輸入欄（在同行）
         input_layout = QHBoxLayout()
         self.host_input = QLineEdit()
         self.user_input = QLineEdit()
@@ -316,8 +316,9 @@ class AS400ConnectorGUI(QMainWindow):
             
             self.connection_error = None
             self.current_connection = host
-            self.user_managers[host] = UserManagerGUI(self, UserManager(connection))
-            self.job_managers[host] = JobManager(connection)
+            user_manager = UserManager(connection)
+            self.user_managers[host] = UserManagerGUI(self, user_manager)
+            self.job_managers[host] = JobManagerGUI(self, JobManager(connection))
             self.connection_successful.emit(connection)  # 發射信號
         else:
             self.connection_error = error
@@ -596,8 +597,8 @@ class AS400ConnectorGUI(QMainWindow):
             QMessageBox.warning(self, "錯誤", "未連接到系統或 JobManager 未初始化")
             return
         
-        job_manager = self.job_managers[self.as400_connector.current_connection]
-        jobs = job_manager.list_active_jobs()  # 使用 JobManager 的 list_active_jobs 方法
+        job_manager_gui = self.job_managers[self.as400_connector.current_connection]
+        jobs = job_manager_gui.job_manager.list_active_jobs()  # 使用 JobManager 的 list_active_jobs 方法
         if jobs:
             columns, data = jobs
             self.job_table.setColumnCount(len(columns))

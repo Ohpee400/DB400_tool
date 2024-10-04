@@ -7,7 +7,7 @@ class JobManager:
     def list_active_jobs(self):
         """列出所有活動作業"""
         query = """
-        SELECT JOB_NAME, AUTHORIZATION_NAME, JOB_TYPE, FUNCTION, SUBSYSTEM
+        SELECT JOB_NAME, AUTHORIZATION_NAME AS USER, JOB_TYPE, FUNCTION, SUBSYSTEM
         FROM TABLE(QSYS2.ACTIVE_JOB_INFO()) 
         ORDER BY SUBSYSTEM, JOB_NAME
         """

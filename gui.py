@@ -375,10 +375,9 @@ class AS400ConnectorGUI(QMainWindow):
             QMessageBox.warning(self, "斷開連接警告", f"斷開連接时發生錯誤：{error}")
 
     def switch_system(self, index):
-        if index == 0:  # "選擇系統..." 項
-            return
+        if index == 0:  # "選擇系統..." 項            return
         
-        selected_system = self.system_combo.currentText()
+            selected_system = self.system_combo.currentText()
         if self.as400_connector.switch_system(selected_system):
             self.statusBar().showMessage(f"已切換到系統: {selected_system}")
 
@@ -515,28 +514,26 @@ class AS400ConnectorGUI(QMainWindow):
         layout.addWidget(refresh_button)
 
     def refresh_user_list(self):
-        if not self.as400_connector.current_connection or self.as400_connector.current_connection not in self.user_managers:
-            self.user_table.setRowCount(0)
-            self.user_table.setColumnCount(0)
+        if not self.user_managers or self.as400_connector.current_connection not in self.user_managers:
+            QMessageBox.warning(self, "錯誤", "未連接到系統或 UserManager 未初始化")
             return
         
         user_manager = self.user_managers[self.as400_connector.current_connection]
-        users = user_manager.user_manager.list_users()  # 使用 UserManager 的 list_users 方法
+        users = user_manager.list_users()  # 直接使用 UserManager 的 list_users 方法
         if users:
             columns, data = users
             self.user_table.setColumnCount(len(columns))
             self.user_table.setRowCount(len(data))
             self.user_table.setHorizontalHeaderLabels(columns)
             
-            for row, row_data in enumerate(data):
-                for col, value in enumerate(row_data):
+            for row, user_data in enumerate(data):
+                for col, value in enumerate(user_data):
                     self.user_table.setItem(row, col, QTableWidgetItem(str(value)))
             
             self.user_table.resizeColumnsToContents()
+            self.user_table.setSelectionBehavior(QTableWidget.SelectRows)
         else:
-            self.user_table.setRowCount(0)
-            self.user_table.setColumnCount(0)
-
+            QMessageBox.warning(self, "錯誤", "無法獲取用戶列表")
     def create_user_dialog(self):
         self.user_manager_gui.create_user_dialog()
 

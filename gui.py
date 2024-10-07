@@ -320,6 +320,7 @@ class AS400ConnectorGUI(QMainWindow):
             self.user_managers[host] = UserManagerGUI(self, user_manager)
             self.job_managers[host] = JobManagerGUI(self, JobManager(connection))
             self.connection_successful.emit(connection)  # 發射信號
+            self.update_current_connection()
         else:
             self.connection_error = error
             QMessageBox.critical(self, "連接失敗", f"無法連接到 {host}: {error}")
@@ -368,15 +369,25 @@ class AS400ConnectorGUI(QMainWindow):
                 self.execute_button.setEnabled(False)
                 self.export_button.setEnabled(False)
                 self.statusBar().showMessage("已斷開所有連接")
+                self.update_current_connection()
         else:
             QMessageBox.warning(self, "斷開連接警告", f"斷開連接时發生錯誤：{error}")
 
     def switch_system(self, index):
-        if index == 0:  # "選擇系統..." 項            return
+        if index == 0:  # "選擇系統..." 項
+            return
         
-            selected_system = self.system_combo.currentText()
+        selected_system = self.system_combo.currentText()
         if self.as400_connector.switch_system(selected_system):
             self.statusBar().showMessage(f"已切換到系統: {selected_system}")
+            self.current_connection = selected_system
+            # 更新相關的管理器
+            if selected_system in self.user_managers:
+                self.user_manager = self.user_managers[selected_system]
+            if selected_system in self.job_managers:
+                self.job_manager = self.job_managers[selected_system]
+        else:
+            QMessageBox.warning(self, "切換失敗", f"無法切換到系統: {selected_system}")
 
     def execute_query(self):
         if not self.as400_connector.current_connection:
@@ -646,3 +657,8 @@ class AS400ConnectorGUI(QMainWindow):
             self.user_managers[self.as400_connector.current_connection].enable_user_dialog()
         else:
             QMessageBox.warning(self, "錯誤", "未連接到系統或 UserManager 未初始化")
+
+    def update_current_connection(self):
+        if self.as400_connector.current_connection:
+            self.system_combo.setCurrentText(self.as400_connector.current_connection)
+            self.statusBar().showMessage(f"當前連接: {self.as400_connector.current_connection}")

@@ -626,19 +626,19 @@ class AS400ConnectorGUI(QMainWindow):
 
     def end_selected_job(self):
         if self.as400_connector.current_connection in self.job_managers:
-            self.job_managers[self.as400_connector.current_connection].end_selected_job()
+            self.job_managers[self.as400_connector.current_connection].select_job_dialog("結束")
         else:
             QMessageBox.warning(self, "錯誤", "未連接到系統或 JobManager 未初始化")
 
     def hold_selected_job(self):
         if self.as400_connector.current_connection in self.job_managers:
-            self.job_managers[self.as400_connector.current_connection].hold_selected_job()
+            self.job_managers[self.as400_connector.current_connection].select_job_dialog("暫停")
         else:
             QMessageBox.warning(self, "錯誤", "未連接到系統或 JobManager 未初始化")
 
     def release_selected_job(self):
         if self.as400_connector.current_connection in self.job_managers:
-            self.job_managers[self.as400_connector.current_connection].release_selected_job()
+            self.job_managers[self.as400_connector.current_connection].select_job_dialog("釋放")
         else:
             QMessageBox.warning(self, "錯誤", "未連接到系統或 JobManager 未初始化")
 

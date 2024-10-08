@@ -321,11 +321,12 @@ class AS400ConnectorGUI(QMainWindow):
             self.job_managers[host] = JobManagerGUI(self, JobManager(connection))
             self.connection_successful.emit(connection)  # 發射信號
             self.update_current_connection()
+            if host in self.job_managers:
+                self.job_managers[host].enable_refresh()
         else:
             self.connection_error = error
             QMessageBox.critical(self, "連接失敗", f"無法連接到 {host}: {error}")
             self.statusBar().showMessage("連接失敗")
-
     def show_disconnect_dialog(self):
         if not self.as400_connector.connections:
             QMessageBox.warning(self, "無連接", "當前沒有活動的連接")
@@ -370,9 +371,11 @@ class AS400ConnectorGUI(QMainWindow):
                 self.export_button.setEnabled(False)
                 self.statusBar().showMessage("已斷開所有連接")
                 self.update_current_connection()
+            
+            if host in self.job_managers:
+                self.job_managers[host].disable_refresh()
         else:
             QMessageBox.warning(self, "斷開連接警告", f"斷開連接时發生錯誤：{error}")
-
     def switch_system(self, index):
         if index == 0:  # "選擇系統..." 項
             return

@@ -1,6 +1,6 @@
 import jaydebeapi
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, QMessageBox, QLineEdit, QDialog, QListWidget, QDialogButtonBox
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 
 class JobManager:
     def __init__(self, connection):
@@ -57,7 +57,13 @@ class JobManagerGUI(QWidget):
         super().__init__(parent)
         self.parent = parent
         self.job_manager = job_manager
+        self.should_refresh = True
         self.initUI()
+        
+        # 設置定時器，每30秒自動刷新一次
+        self.refresh_timer = QTimer(self)
+        self.refresh_timer.timeout.connect(self.refresh_job_list)
+        self.refresh_timer.start(30000)  # 30000毫秒 = 30秒
 
     def initUI(self):
         layout = QVBoxLayout(self)
@@ -104,6 +110,8 @@ class JobManagerGUI(QWidget):
         self.refresh_job_list()
 
     def refresh_job_list(self):
+        if not self.should_refresh:
+            return
         result = self.job_manager.list_active_jobs()
         if result:
             columns, data = result
@@ -118,7 +126,8 @@ class JobManagerGUI(QWidget):
             self.job_table.resizeColumnsToContents()
             self.apply_filters()
         else:
-            QMessageBox.warning(self, "錯誤", "無法獲取作業列表")
+            self.should_refresh = False
+            self.refresh_timer.stop()
 
     def apply_filters(self):
         subsystem_filter = self.subsystem_filter.text().lower()
@@ -133,6 +142,9 @@ class JobManagerGUI(QWidget):
                 self.job_table.setRowHidden(row, True)
 
     def select_job_dialog(self, action):
+        # 首先刷新作業列表
+        self.refresh_job_list()
+        
         dialog = QDialog(self)
         dialog.setWindowTitle(f"選擇要{action}的作業")
         layout = QVBoxLayout(dialog)
@@ -213,3 +225,15 @@ class JobManagerGUI(QWidget):
             self.refresh_job_list()
         except Exception as e:
             QMessageBox.critical(self, "錯誤", f"釋放作業時發生錯誤: {str(e)}")
+
+    def enable_refresh(self):
+        self.should_refresh = True
+        self.refresh_timer.start()
+
+    def disable_refresh(self):
+        self.should_refresh = False
+        self.refresh_timer.stop()
+
+    def closeEvent(self, event):
+        self.refresh_timer.stop()
+        super().closeEvent(event)

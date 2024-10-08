@@ -123,6 +123,16 @@ class UserManager:
         cmd = f"CHGUSRPRF USRPRF({username}) USRCLS({user_class}) SPCAUT({special_auth})"
         self._execute_command(cmd)
 
+    def get_user_spool_files(self, username):
+        """獲取指定用戶的 spool files"""
+        query = f"""
+        SELECT SPOOLED_FILE_NAME, JOB_NAME, FILE_NUMBER, TOTAL_PAGES, CREATE_TIMESTAMP
+        FROM TABLE(QSYS2.OUTPUT_QUEUE_ENTRIES_BASIC(USER_FILTER => '{username}')) AS X
+        ORDER BY CREATE_TIMESTAMP DESC
+        FETCH FIRST 100 ROWS ONLY
+        """
+        return self._execute_query(query)
+
     def _execute_query(self, query):
         try:
             with self.connection.cursor() as cursor:
@@ -161,6 +171,7 @@ class UserManagerGUI(QWidget):
         self.disable_user_button = QPushButton('停用帳號')
         self.enable_user_button = QPushButton('啟用帳號')
         self.modify_authorities_button = QPushButton('修改權限')
+        self.view_spool_files_button = QPushButton('查看 Spool Files')
 
         button_layout.addWidget(self.refresh_button)
         button_layout.addWidget(self.create_button)
@@ -169,6 +180,7 @@ class UserManagerGUI(QWidget):
         button_layout.addWidget(self.disable_user_button)
         button_layout.addWidget(self.enable_user_button)
         button_layout.addWidget(self.modify_authorities_button)
+        button_layout.addWidget(self.view_spool_files_button)
 
         layout.addLayout(button_layout)
 
@@ -184,6 +196,7 @@ class UserManagerGUI(QWidget):
         self.disable_user_button.clicked.connect(self.disable_user_dialog)
         self.enable_user_button.clicked.connect(self.enable_user_dialog)
         self.modify_authorities_button.clicked.connect(self.modify_authorities_dialog)
+        self.view_spool_files_button.clicked.connect(self.show_user_spool_files)
 
         # 初始化用戶列表
         self.refresh_user_list()
@@ -312,3 +325,39 @@ class UserManagerGUI(QWidget):
                     self.refresh_user_list()
                 except Exception as e:
                     QMessageBox.critical(self, "錯誤", f"修改用戶權限時發生錯誤：{str(e)}")
+
+    def show_user_spool_files(self):
+        selected_items = self.user_table.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "警告", "請先選擇一個用戶")
+            return
+
+        username = selected_items[0].text()
+        result = self.user_manager.get_user_spool_files(username)
+
+        if result:
+            columns, data = result
+            dialog = QDialog(self)
+            dialog.setWindowTitle(f"{username} 的 Spool Files")
+            layout = QVBoxLayout(dialog)
+
+            table = QTableWidget()
+            table.setColumnCount(len(columns))
+            table.setRowCount(len(data))
+            table.setHorizontalHeaderLabels(columns)
+
+            for row, spool_data in enumerate(data):
+                for col, value in enumerate(spool_data):
+                    table.setItem(row, col, QTableWidgetItem(str(value)))
+
+            table.resizeColumnsToContents()
+            layout.addWidget(table)
+
+            close_button = QPushButton("關閉")
+            close_button.clicked.connect(dialog.close)
+            layout.addWidget(close_button)
+
+            dialog.setLayout(layout)
+            dialog.exec()
+        else:
+            QMessageBox.warning(self, "錯誤", f"無法獲取 {username} 的 Spool Files")

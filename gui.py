@@ -473,7 +473,6 @@ class AS400ConnectorGUI(QMainWindow):
         event.accept()
 
     def setup_user_manager_page(self):
-        self.user_manager_page = QWidget()
         layout = QVBoxLayout(self.user_manager_page)
 
         # 創建標題和切換按鈕的水平佈局
@@ -520,6 +519,10 @@ class AS400ConnectorGUI(QMainWindow):
         modify_authorities_button = QPushButton("修改權限")
         modify_authorities_button.clicked.connect(self.modify_user_authorities_dialog)
         button_layout.addWidget(modify_authorities_button)
+        
+        view_spool_files_button = QPushButton("查看 Spool Files")
+        view_spool_files_button.clicked.connect(self.view_user_spool_files)
+        button_layout.addWidget(view_spool_files_button)
         
         layout.addLayout(button_layout)
         
@@ -640,7 +643,7 @@ class AS400ConnectorGUI(QMainWindow):
         if self.as400_connector.current_connection in self.job_managers:
             self.job_managers[self.as400_connector.current_connection].select_job_dialog("暫停")
         else:
-            QMessageBox.warning(self, "錯誤", "未連接到系統或 JobManager 未初始化")
+            QMessageBox.warning(self, "錯", "未連接到系統或 JobManager 未初始化")
 
     def release_selected_job(self):
         if self.as400_connector.current_connection in self.job_managers:
@@ -672,5 +675,11 @@ class AS400ConnectorGUI(QMainWindow):
     def modify_user_authorities_dialog(self):
         if self.as400_connector.current_connection in self.user_managers:
             self.user_managers[self.as400_connector.current_connection].modify_authorities_dialog()
+        else:
+            QMessageBox.warning(self, "錯誤", "未連接到系統或 UserManager 未初始化")
+
+    def view_user_spool_files(self):
+        if self.as400_connector.current_connection in self.user_managers:
+            self.user_managers[self.as400_connector.current_connection].show_user_spool_files()
         else:
             QMessageBox.warning(self, "錯誤", "未連接到系統或 UserManager 未初始化")

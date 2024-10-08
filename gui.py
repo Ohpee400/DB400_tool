@@ -376,9 +376,8 @@ class AS400ConnectorGUI(QMainWindow):
     def switch_system(self, index):
         if index == 0:  # "選擇系統..." 項
             return
-        
         selected_system = self.system_combo.currentText()
-        if self.as400_connector.switch_system(selected_system):
+        if self.as400_connector:
             self.statusBar().showMessage(f"已切換到系統: {selected_system}")
             self.current_connection = selected_system
             # 更新相關的管理器
@@ -514,6 +513,10 @@ class AS400ConnectorGUI(QMainWindow):
         enable_user_button = QPushButton("啟用帳號")
         enable_user_button.clicked.connect(self.enable_user_dialog)
         button_layout.addWidget(enable_user_button)
+        
+        modify_authorities_button = QPushButton("修改權限")
+        modify_authorities_button.clicked.connect(self.modify_user_authorities_dialog)
+        button_layout.addWidget(modify_authorities_button)
         
         layout.addLayout(button_layout)
         
@@ -662,3 +665,9 @@ class AS400ConnectorGUI(QMainWindow):
         if self.as400_connector.current_connection:
             self.system_combo.setCurrentText(self.as400_connector.current_connection)
             self.statusBar().showMessage(f"當前連接: {self.as400_connector.current_connection}")
+
+    def modify_user_authorities_dialog(self):
+        if self.as400_connector.current_connection in self.user_managers:
+            self.user_managers[self.as400_connector.current_connection].modify_authorities_dialog()
+        else:
+            QMessageBox.warning(self, "錯誤", "未連接到系統或 UserManager 未初始化")

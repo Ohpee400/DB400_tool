@@ -1,6 +1,6 @@
 import jaydebeapi
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QTableWidget, QTableWidgetItem, 
-                               QMessageBox, QInputDialog, QLineEdit, QComboBox, QDialog, QFormLayout, QCheckBox, QDialogButtonBox)
+                               QMessageBox, QInputDialog, QLineEdit, QComboBox, QDialog, QFormLayout, QCheckBox, QDialogButtonBox, QLabel)
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon
 
@@ -117,6 +117,12 @@ class UserManager:
         cmd = f"CHGUSRPRF USRPRF({username}) STATUS(*ENABLED)"
         self._execute_command(cmd)
 
+    def modify_user_authorities(self, username, user_class, special_authorities):
+        """修改用戶的 User Class 和特殊權限"""
+        special_auth = " ".join(special_authorities)
+        cmd = f"CHGUSRPRF USRPRF({username}) USRCLS({user_class}) SPCAUT({special_auth})"
+        self._execute_command(cmd)
+
     def _execute_query(self, query):
         try:
             with self.connection.cursor() as cursor:
@@ -154,6 +160,7 @@ class UserManagerGUI(QWidget):
         self.change_password_button = QPushButton('更改密碼')
         self.disable_user_button = QPushButton('停用帳號')
         self.enable_user_button = QPushButton('啟用帳號')
+        self.modify_authorities_button = QPushButton('修改權限')
 
         button_layout.addWidget(self.refresh_button)
         button_layout.addWidget(self.create_button)
@@ -161,6 +168,7 @@ class UserManagerGUI(QWidget):
         button_layout.addWidget(self.change_password_button)
         button_layout.addWidget(self.disable_user_button)
         button_layout.addWidget(self.enable_user_button)
+        button_layout.addWidget(self.modify_authorities_button)
 
         layout.addLayout(button_layout)
 
@@ -175,6 +183,7 @@ class UserManagerGUI(QWidget):
         self.change_password_button.clicked.connect(self.change_password_dialog)
         self.disable_user_button.clicked.connect(self.disable_user_dialog)
         self.enable_user_button.clicked.connect(self.enable_user_dialog)
+        self.modify_authorities_button.clicked.connect(self.modify_authorities_dialog)
 
         # 初始化用戶列表
         self.refresh_user_list()
@@ -266,3 +275,40 @@ class UserManagerGUI(QWidget):
                 self.refresh_user_list()
             except Exception as e:
                 QMessageBox.critical(self, "錯誤", f"啟用帳號時發生錯誤：{str(e)}")
+
+    def modify_authorities_dialog(self):
+        username, ok = QInputDialog.getText(self, "修改改用戶權限", "輸入要修改權限的用戶名:")
+        if ok and username:
+            dialog = QDialog(self)
+            dialog.setWindowTitle(f"修改 {username} 的權限")
+            layout = QVBoxLayout(dialog)
+
+            user_class_combo = QComboBox()
+            user_class_combo.addItems(["*USER", "*SYSOPR", "*PGMR", "*SECADM", "*SECOFR"])
+            layout.addWidget(QLabel("User Class:"))  # Now QLabel is defined
+            layout.addWidget(user_class_combo)
+
+            special_auths = ["*ALLOBJ", "*AUDIT", "*IOSYSCFG", "*JOBCTL", "*SAVSYS", "*SECADM", "*SERVICE", "*SPLCTL"]
+            auth_checkboxes = []
+            auth_layout = QVBoxLayout()
+            for auth in special_auths:
+                checkbox = QCheckBox(auth)
+                auth_checkboxes.append(checkbox)
+                auth_layout.addWidget(checkbox)
+            layout.addWidget(QLabel("特殊權限:"))
+            layout.addLayout(auth_layout)
+
+            button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+            button_box.accepted.connect(dialog.accept)
+            button_box.rejected.connect(dialog.reject)
+            layout.addWidget(button_box)
+
+            if dialog.exec_() == QDialog.Accepted:
+                new_user_class = user_class_combo.currentText()
+                new_special_auths = [cb.text() for cb in auth_checkboxes if cb.isChecked()]
+                try:
+                    self.user_manager.modify_user_authorities(username, new_user_class, new_special_auths)
+                    QMessageBox.information(self, "成功", f"用戶 {username} 的權限已成功修改")
+                    self.refresh_user_list()
+                except Exception as e:
+                    QMessageBox.critical(self, "錯誤", f"修改用戶權限時發生錯誤：{str(e)}")

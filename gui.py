@@ -377,7 +377,7 @@ class AS400ConnectorGUI(QMainWindow):
         if index == 0:  # "選擇系統..." 項
             return
         selected_system = self.system_combo.currentText()
-        if self.as400_connector:
+        if self.as400_connector.switch_system(selected_system):
             self.statusBar().showMessage(f"已切換到系統: {selected_system}")
             self.current_connection = selected_system
             # 更新相關的管理器

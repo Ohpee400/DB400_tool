@@ -335,6 +335,7 @@ class UserManagerGUI(QWidget):
                 columns, data = result
                 dialog = QDialog(self)
                 dialog.setWindowTitle(f"{username} 的 Spool Files")
+                dialog.resize(1000, 600)  # 設置視窗大小為 1000x600
                 layout = QVBoxLayout(dialog)
 
                 table = QTableWidget()
@@ -383,6 +384,7 @@ class UserManagerGUI(QWidget):
                 return
             content_dialog = QDialog(self)
             content_dialog.setWindowTitle(f"報表內容: {spooled_file_name}")
+            content_dialog.resize(1200, 800)  # 設置視窗大小為 1200x800
             content_layout = QVBoxLayout(content_dialog)
 
             content_table = QTableWidget()

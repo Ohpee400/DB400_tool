@@ -126,13 +126,12 @@ class UserManager:
     def get_user_spool_files(self, username):
         """獲取指定用戶的 spool files"""
         query = f"""
-        SELECT SPOOLED_FILE_NAME, JOB_NAME, FILE_NUMBER, TOTAL_PAGES, CREATE_TIMESTAMP
-        FROM TABLE(QSYS2.OUTPUT_QUEUE_ENTRIES_BASIC(USER_FILTER => '{username}')) AS X
-        ORDER BY CREATE_TIMESTAMP DESC
+        SELECT * FROM QSYS2.OUTPUT_QUEUE_ENTRIES_BASIC
+        WHERE USER_NAME = '{username}'
+        ORDER BY SIZE DESC
         FETCH FIRST 100 ROWS ONLY
         """
         return self._execute_query(query)
-
     def _execute_query(self, query):
         try:
             with self.connection.cursor() as cursor:
@@ -327,40 +326,34 @@ class UserManagerGUI(QWidget):
                     QMessageBox.critical(self, "錯誤", f"修改用戶權限時發生錯誤：{str(e)}")
 
     def show_user_spool_files(self):
-        selected_rows = self.user_table.selectionModel().selectedRows()
-        if not selected_rows:
-            QMessageBox.warning(self, "警告", "請先選擇一個用戶")
-            return
+        username, ok = QInputDialog.getText(self, "查看 Spool Files", "輸入要查看的用戶名:")
+        if ok and username:
+            username = username.upper()  # 將輸入轉換為大寫
+            result = self.user_manager.get_user_spool_files(username)
 
-        username = self.user_table.item(selected_rows[0].row(), 0).text()
-        result = self.user_manager.get_user_spool_files(username)
+            if result:
+                columns, data = result
+                dialog = QDialog(self)
+                dialog.setWindowTitle(f"{username} 的 Spool Files")
+                layout = QVBoxLayout(dialog)
 
-        if result:
-            columns, data = result
-            dialog = QDialog(self)
-            dialog.setWindowTitle(f"{username} 的 Spool Files")
-            layout = QVBoxLayout(dialog)
+                table = QTableWidget()
+                table.setColumnCount(len(columns))
+                table.setRowCount(len(data))
+                table.setHorizontalHeaderLabels(columns)
 
-            table = QTableWidget()
-            table.setColumnCount(len(columns))
-            table.setRowCount(len(data))
-            table.setHorizontalHeaderLabels(columns)
+                for row, spool_data in enumerate(data):
+                    for col, value in enumerate(spool_data):
+                        table.setItem(row, col, QTableWidgetItem(str(value)))
 
-            for row, spool_data in enumerate(data):
-                for col, value in enumerate(spool_data):
-                    table.setItem(row, col, QTableWidgetItem(str(value)))
+                table.resizeColumnsToContents()
+                layout.addWidget(table)
 
-            table.resizeColumnsToContents()
-            layout.addWidget(table)
+                close_button = QPushButton("關閉")
+                close_button.clicked.connect(dialog.close)
+                layout.addWidget(close_button)
 
-            close_button = QPushButton("關閉")
-            close_button.clicked.connect(dialog.close)
-            layout.addWidget(close_button)
-
-            dialog.setLayout(layout)
-            dialog.exec()
-        else:
-            QMessageBox.warning(self, "錯誤", f"無法獲取 {username} 的 Spool Files")
-
-        self.user_table.setSelectionMode(QTableWidget.SingleSelection)
-        self.user_table.setSelectionBehavior(QTableWidget.SelectRows)
+                dialog.setLayout(layout)
+                dialog.exec()
+            else:
+                QMessageBox.warning(self, "錯誤", f"無法獲取 {username} 的 Spool Files")

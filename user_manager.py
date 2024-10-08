@@ -327,12 +327,12 @@ class UserManagerGUI(QWidget):
                     QMessageBox.critical(self, "錯誤", f"修改用戶權限時發生錯誤：{str(e)}")
 
     def show_user_spool_files(self):
-        selected_items = self.user_table.selectedItems()
-        if not selected_items:
+        selected_rows = self.user_table.selectionModel().selectedRows()
+        if not selected_rows:
             QMessageBox.warning(self, "警告", "請先選擇一個用戶")
             return
 
-        username = selected_items[0].text()
+        username = self.user_table.item(selected_rows[0].row(), 0).text()
         result = self.user_manager.get_user_spool_files(username)
 
         if result:
@@ -361,3 +361,6 @@ class UserManagerGUI(QWidget):
             dialog.exec()
         else:
             QMessageBox.warning(self, "錯誤", f"無法獲取 {username} 的 Spool Files")
+
+        self.user_table.setSelectionMode(QTableWidget.SingleSelection)
+        self.user_table.setSelectionBehavior(QTableWidget.SelectRows)

@@ -17,7 +17,7 @@ class JobManager:
 
     def end_job(self, job_name):
         """結束指定作業"""
-        cmd = f"ENDJOB JOB({job_name}) OPTION(*CNTRLD)"
+        cmd = f"ENDJOB JOB({job_name}) OPTION(*IMMED)"
         self._execute_command(cmd)
 
     def hold_job(self, job_name):
@@ -137,12 +137,37 @@ class JobManagerGUI(QWidget):
         dialog.setWindowTitle(f"選擇要{action}的作業")
         layout = QVBoxLayout(dialog)
 
+        # 添加篩選器
+        filter_layout = QHBoxLayout()
+        subsystem_filter = QLineEdit()
+        subsystem_filter.setPlaceholderText("按子系統篩選")
+        user_filter = QLineEdit()
+        user_filter.setPlaceholderText("按用戶名篩選")
+        filter_button = QPushButton("篩選")
+        filter_layout.addWidget(subsystem_filter)
+        filter_layout.addWidget(user_filter)
+        filter_layout.addWidget(filter_button)
+        layout.addLayout(filter_layout)
+
         job_list = QListWidget()
-        for row in range(self.job_table.rowCount()):
-            if not self.job_table.isRowHidden(row):
-                job_name = self.job_table.item(row, 0).text()
-                job_list.addItem(job_name)
         layout.addWidget(job_list)
+
+        def apply_filters():
+            job_list.clear()
+            subsystem_text = subsystem_filter.text().lower()
+            user_text = user_filter.text().lower()
+            for row in range(self.job_table.rowCount()):
+                job_name = self.job_table.item(row, 0).text()
+                subsystem = self.job_table.item(row, 4).text().lower()  # 假設子系統在第5列
+                user = self.job_table.item(row, 1).text().lower()  # 假設用戶名在第2列
+                if subsystem_text in subsystem and user_text in user:
+                    job_list.addItem(job_name)
+
+        # 連接篩選按鈕的信號
+        filter_button.clicked.connect(apply_filters)
+
+        # 初始填充作業列表
+        apply_filters()
 
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         button_box.accepted.connect(dialog.accept)

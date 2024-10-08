@@ -338,13 +338,18 @@ class UserManagerGUI(QWidget):
                 layout = QVBoxLayout(dialog)
 
                 table = QTableWidget()
-                table.setColumnCount(len(columns))
+                table.setColumnCount(len(columns) + 1)  # 增加一列用於放置"檢視"按鈕
                 table.setRowCount(len(data))
-                table.setHorizontalHeaderLabels(columns)
+                headers = columns + ["操作"]
+                table.setHorizontalHeaderLabels(headers)
 
                 for row, spool_data in enumerate(data):
                     for col, value in enumerate(spool_data):
                         table.setItem(row, col, QTableWidgetItem(str(value)))
+                    
+                    view_button = QPushButton("檢視")
+                    view_button.clicked.connect(lambda _, r=row: self.view_spool_file_content(data[r]))
+                    table.setCellWidget(row, len(columns), view_button)
 
                 table.resizeColumnsToContents()
                 layout.addWidget(table)
@@ -357,3 +362,46 @@ class UserManagerGUI(QWidget):
                 dialog.exec()
             else:
                 QMessageBox.warning(self, "錯誤", f"無法獲取 {username} 的 Spool Files")
+
+    def view_spool_file_content(self, spool_data):
+        spooled_file_name = spool_data[3]  # SPOOLED_FILE_NAME 在第4列（索引3）
+        job_name = spool_data[11]  # JOB_NAME 在第12列（索引11）
+        
+        print(f"Debug: JOB_NAME = {job_name}, SPOOLED_FILE_NAME = {spooled_file_name}")  # 添加調試輸出
+        
+        query = f"""
+        SELECT * FROM TABLE(SYSTOOLS.SPOOLED_FILE_DATA(
+            JOB_NAME          =>'{job_name}',
+            SPOOLED_FILE_NAME =>'{spooled_file_name}'))
+        ORDER BY ORDINAL_POSITION
+        """
+        result = self.user_manager._execute_query(query)
+        if result:
+            columns, data = result
+            if not data:
+                QMessageBox.warning(self, "警告", "報表內容為空")
+                return
+            content_dialog = QDialog(self)
+            content_dialog.setWindowTitle(f"報表內容: {spooled_file_name}")
+            content_layout = QVBoxLayout(content_dialog)
+
+            content_table = QTableWidget()
+            content_table.setColumnCount(len(columns))
+            content_table.setRowCount(len(data))
+            content_table.setHorizontalHeaderLabels(columns)
+
+            for row, content_data in enumerate(data):
+                for col, value in enumerate(content_data):
+                    content_table.setItem(row, col, QTableWidgetItem(str(value)))
+
+            content_table.resizeColumnsToContents()
+            content_layout.addWidget(content_table)
+
+            close_button = QPushButton("關閉")
+            close_button.clicked.connect(content_dialog.close)
+            content_layout.addWidget(close_button)
+
+            content_dialog.setLayout(content_layout)
+            content_dialog.exec()
+        else:
+            QMessageBox.warning(self, "錯誤", "無法獲取報表內容")

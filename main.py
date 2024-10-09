@@ -20,28 +20,28 @@ def initialize_managers(main_gui):
     # 同步初始化 AS400Connector
     connector = AS400Connector()
     
-    # 这里假设您有一个方法来获取连接信息
+    # 這裡假設您有一個方法來獲取連接信息
     host, user, password = main_gui.get_connection_info()
     
-    # 同步连接到 AS400
+    # 同步連接到 AS400
     connection, error = connector.connect_to_as400(host, user, password)
     
     if error:
-        print(f"连接错误: {error}")
+        print(f"連線錯誤: {error}")
         return
     
     # 初始化 UserManager 和 JobManager
     user_manager = UserManager(connection)
     job_manager = JobManager(connection)
     
-    # 设置 managers
+    # 設置 managers
     main_gui.set_managers(user_manager, job_manager)
 
 def main():
     app = create_application()
     main_gui = setup_main_gui()
     
-    # 使用 QTimer 来延迟执行初始化和显示 GUI
+    # 使用 QTimer 來延遲執行初始化和顯示 GUI
     QTimer.singleShot(0, lambda: initialize_managers(main_gui))
     QTimer.singleShot(0, main_gui.show)
     

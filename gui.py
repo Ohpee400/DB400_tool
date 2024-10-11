@@ -537,7 +537,8 @@ class AS400ConnectorGUI(QMainWindow):
         # 新增篩選器
         filter_layout = QHBoxLayout()
         self.user_filter = QLineEdit()
-        self.user_filter.setPlaceholderText("輸入用戶名稱進行篩選")
+        self.user_filter.setPlaceholderText("輸入用戶名稱進行篩選 (支持 * 萬用字元)")
+        self.user_filter.textChanged.connect(lambda: self.user_filter.setText(self.user_filter.text().upper()))
         filter_layout.addWidget(self.user_filter)
 
         filter_button = QPushButton("確認篩選")
@@ -565,9 +566,15 @@ class AS400ConnectorGUI(QMainWindow):
             
             self.user_table.resizeColumnsToContents()
             self.user_table.setSelectionBehavior(QTableWidget.SelectRows)
-            self.apply_user_filter()  # 應用當前的篩選條件
+            self.user_filter.clear()  # 清空篩選器
+            self.show_all_rows()  # 顯示所有行
         else:
             QMessageBox.warning(self, "錯誤", "無法獲取用戶列表")
+
+    def show_all_rows(self):
+        for row in range(self.user_table.rowCount()):
+            self.user_table.setRowHidden(row, False)
+
     def create_user_dialog(self):
         if self.as400_connector.current_connection in self.user_managers:
             self.user_managers[self.as400_connector.current_connection].create_user_dialog()
@@ -707,7 +714,11 @@ class AS400ConnectorGUI(QMainWindow):
         for row in range(self.user_table.rowCount()):
             item = self.user_table.item(row, 0)  # 假設用戶名在第一列
             if item:
-                if filter_text in item.text().upper():
+                if self.match_wildcard(item.text().upper(), filter_text):
                     self.user_table.setRowHidden(row, False)
                 else:
                     self.user_table.setRowHidden(row, True)
+
+    def match_wildcard(self, text, pattern):
+        import fnmatch
+        return fnmatch.fnmatch(text, pattern)

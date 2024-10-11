@@ -20,14 +20,11 @@ def initialize_managers(main_gui):
     # 同步初始化 AS400Connector
     connector = AS400Connector()
     
-    # 這裡假設您有一個方法來獲取連接信息
-    host, user, password = main_gui.get_connection_info()
+    # 使用 main_gui 中的連接信息
+    connection = main_gui.as400_connector.connections.get(main_gui.as400_connector.current_connection)
     
-    # 同步連接到 AS400
-    connection, error = connector.connect_to_as400(host, user, password)
-    
-    if error:
-        print(f"連線錯誤: {error}")
+    if not connection:
+        print("錯誤: 沒有活動的連接")
         return
     
     # 初始化 UserManager 和 JobManager

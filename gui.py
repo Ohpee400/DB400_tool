@@ -245,7 +245,7 @@ class AS400ConnectorGUI(QMainWindow):
 
         self.query_input = QPlainTextEdit()
         self.query_input.setPlaceholderText("在此輸入SQL查詢...")
-        self.query_input.setStyleSheet("font-family: Consolas, Monaco, monospace; font-size: 12px;")
+        self.query_input.setStyleSheet("font-family: 標楷體, KaiTi, SimKai; font-size: 12px;")
         layout.addWidget(self.query_input)
 
         self.execute_button = QPushButton('執行查詢')

@@ -490,6 +490,7 @@ class AS400ConnectorGUI(QMainWindow):
         refresh_button = QPushButton('刷新')
         refresh_button.clicked.connect(self.refresh_user_list)
         refresh_button.setFixedSize(80, 30)  # 設置按鈕大小
+        refresh_button.setStyleSheet("border: none;")  # 移除邊框
         title_layout.addWidget(refresh_button)
         
         return_button = QPushButton('切換到主界面')
@@ -533,6 +534,18 @@ class AS400ConnectorGUI(QMainWindow):
         
         layout.addLayout(button_layout)
 
+        # 新增篩選器
+        filter_layout = QHBoxLayout()
+        self.user_filter = QLineEdit()
+        self.user_filter.setPlaceholderText("輸入用戶名稱進行篩選")
+        filter_layout.addWidget(self.user_filter)
+
+        filter_button = QPushButton("確認篩選")
+        filter_button.clicked.connect(self.apply_user_filter)
+        filter_layout.addWidget(filter_button)
+
+        layout.addLayout(filter_layout)
+
     def refresh_user_list(self):
         if not self.user_managers or self.as400_connector.current_connection not in self.user_managers:
             QMessageBox.warning(self, "錯誤", "未連接到系統或 UserManager 未初始化")
@@ -552,6 +565,7 @@ class AS400ConnectorGUI(QMainWindow):
             
             self.user_table.resizeColumnsToContents()
             self.user_table.setSelectionBehavior(QTableWidget.SelectRows)
+            self.apply_user_filter()  # 應用當前的篩選條件
         else:
             QMessageBox.warning(self, "錯誤", "無法獲取用戶列表")
     def create_user_dialog(self):
@@ -687,3 +701,13 @@ class AS400ConnectorGUI(QMainWindow):
             self.user_managers[self.as400_connector.current_connection].show_user_spool_files()
         else:
             QMessageBox.warning(self, "錯誤", "未連接到系統或 UserManager 未初始化")
+
+    def apply_user_filter(self):
+        filter_text = self.user_filter.text().upper()
+        for row in range(self.user_table.rowCount()):
+            item = self.user_table.item(row, 0)  # 假設用戶名在第一列
+            if item:
+                if filter_text in item.text().upper():
+                    self.user_table.setRowHidden(row, False)
+                else:
+                    self.user_table.setRowHidden(row, True)

@@ -459,6 +459,7 @@ class AS400ConnectorGUI(QMainWindow):
             return
         self.stacked_widget.setCurrentWidget(self.user_manager_page)
         self.switch_button.setText('切換到系統監控')
+        self.refresh_user_list()  # 自動刷新用戶列表
 
     def switch_to_job_manager(self):
         if not self.job_managers or self.as400_connector.current_connection not in self.job_managers:
@@ -466,6 +467,7 @@ class AS400ConnectorGUI(QMainWindow):
             return
         self.stacked_widget.setCurrentWidget(self.job_manager_page)
         self.switch_button.setText('切換到系統監控')
+        self.refresh_job_list()  # 自動刷新作業列表
 
     def closeEvent(self, event):
         for conn in self.as400_connector.connections.values():
@@ -484,6 +486,11 @@ class AS400ConnectorGUI(QMainWindow):
         title_layout.addWidget(title_label)
         
         title_layout.addStretch(1)  # 添加彈性空間
+        
+        refresh_button = QPushButton('刷新')
+        refresh_button.clicked.connect(self.refresh_user_list)
+        refresh_button.setFixedSize(80, 30)  # 設置按鈕大小
+        title_layout.addWidget(refresh_button)
         
         return_button = QPushButton('切換到主界面')
         return_button.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.main_page))
@@ -525,10 +532,6 @@ class AS400ConnectorGUI(QMainWindow):
         button_layout.addWidget(view_spool_files_button)
         
         layout.addLayout(button_layout)
-        
-        refresh_button = QPushButton("刷新用戶列表")
-        refresh_button.clicked.connect(self.refresh_user_list)
-        layout.addWidget(refresh_button)
 
     def refresh_user_list(self):
         if not self.user_managers or self.as400_connector.current_connection not in self.user_managers:
@@ -582,6 +585,11 @@ class AS400ConnectorGUI(QMainWindow):
         
         title_layout.addStretch(1)  # 添加彈性空間
         
+        refresh_button = QPushButton('刷新')
+        refresh_button.clicked.connect(self.refresh_job_list)
+        refresh_button.setFixedSize(80, 30)  # 設置按鈕大小
+        title_layout.addWidget(refresh_button)
+        
         return_button = QPushButton('切換到主界面')
         return_button.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.main_page))
         return_button.setFixedSize(120, 30)  # 設置按鈕大小
@@ -607,10 +615,6 @@ class AS400ConnectorGUI(QMainWindow):
         button_layout.addWidget(release_job_button)
         
         layout.addLayout(button_layout)
-        
-        refresh_button = QPushButton("刷新")
-        refresh_button.clicked.connect(self.refresh_job_list)
-        layout.addWidget(refresh_button)
 
     def refresh_job_list(self):
         if not self.job_managers or self.as400_connector.current_connection not in self.job_managers:

@@ -1,4 +1,10 @@
 import jaydebeapi
+<<<<<<< Updated upstream
+=======
+import os
+import logging  # 添加日誌模組
+from PySide6.QtWidgets import QMessageBox
+>>>>>>> Stashed changes
 
 jt400_path = "/Users/clark/Desktop/DDSC/Clark文件/13-JavaCode/jt400.jar"
 

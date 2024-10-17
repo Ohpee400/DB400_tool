@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, Q
                                QPlainTextEdit, QMessageBox, QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, 
                                QStyledItemDelegate, QStackedWidget, QDialog, QDialogButtonBox, QFrame)
 from PySide6.QtGui import QFont, QColor, QShortcut, QKeySequence
-from PySide6.QtCore import Qt, QCoreApplication, Signal  
+from PySide6.QtCore import Qt, Signal  
 from openpyxl import Workbook
 from as400_connector import AS400Connector
 from system_monitor import SystemMonitorGUI
@@ -656,7 +656,11 @@ class AS400ConnectorGUI(QMainWindow):
             
             self.job_table.resizeColumnsToContents()
         else:
+<<<<<<< Updated upstream
             QMessageBox.warning(self, "錯誤", "獲取活動作業列表失敗")
+=======
+            QMessageBox.warning(self, "錯誤", "獲取活動作列表失敗")
+>>>>>>> Stashed changes
 
     def end_selected_job(self):
         if self.as400_connector.current_connection in self.job_managers:
